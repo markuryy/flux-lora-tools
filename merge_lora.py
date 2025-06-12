@@ -5,7 +5,7 @@ import sys
 import torch
 from tqdm import tqdm
 from safetensors.torch import load_file, save_file
-from input import option_5_merge_lora
+from input import option_5_merge_lora, option_ema_merge_loras
 import psutil
 
 def start(settings):
@@ -320,3 +320,65 @@ def additive_merge_multiple(tensors):
     except Exception as e:
         print(f"Error in additive_merge_multiple: {e}")
         return torch.zeros_like(tensors[0])
+
+
+def ema_merge_series(models, decay):
+    """Applies an exponential moving average across a list of LoRA models."""
+    ema_model = {k: v.clone() for k, v in models[0].items()}
+    for idx, model in enumerate(models[1:], 1):
+        all_keys = set(ema_model.keys()).union(model.keys())
+        desc = f"EMA pass {idx}"
+        with tqdm(total=len(all_keys), desc=desc, unit="layer") as pbar:
+            for key in all_keys:
+                t_ema = ema_model.get(key)
+                t_new = model.get(key)
+                if t_ema is None and t_new is None:
+                    pbar.update(1)
+                    continue
+                if t_ema is None:
+                    t_ema = torch.zeros_like(t_new)
+                if t_new is None:
+                    t_new = torch.zeros_like(t_ema)
+                if t_ema.size() != t_new.size():
+                    t_ema, t_new = pad_tensors(t_ema, t_new)
+                ema_model[key] = decay * t_ema + (1 - decay) * t_new
+                pbar.update(1)
+    return ema_model
+
+
+def start_ema(settings):
+    """Run EMA merging on a list of LoRA models."""
+    print(f"\n###################################\nEMA merging with settings: {settings}")
+
+    lora_folder = "05a-lora_merging"
+    paths = [os.path.join(lora_folder, f) for f in settings['lora_files']]
+    models = [load_file(p) for p in paths]
+    ema_model = ema_merge_series(models, settings['ema_decay'])
+
+    base_names = "_".join(os.path.splitext(f)[0] for f in settings['lora_files'])
+    decay_tag = int(settings['ema_decay'] * 100)
+    out_name = f"ema_{decay_tag}_{base_names}.safetensors"
+    out_path = os.path.join(lora_folder, out_name)
+    save_file(ema_model, out_path)
+    print(f"EMA merged LoRA saved as: {out_name}")
+    print("Merging completed! ✅")
+
+    ema_completed(settings)
+
+
+def ema_completed(settings):
+    """Prompt user to decide whether to run another EMA merge."""
+    while True:
+        choice = input("Do you want to run EMA on another set? (yes to continue, no to finish): ").strip().lower()
+        if choice in ["yes", "y", ""]:
+            new_settings = option_ema_merge_loras()
+            if new_settings:
+                start_ema(new_settings)
+            else:
+                print("No new settings provided. Exiting merge process.")
+                sys.exit(0)
+        elif choice in ["no", "n"]:
+            print("EMA merging process completed.")
+            sys.exit(0)
+        else:
+            print("Invalid choice. Please enter 'yes' or 'no'.")

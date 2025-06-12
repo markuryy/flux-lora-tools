@@ -13,6 +13,7 @@ YouTube on My Merged LoRAs: https://www.youtube.com/watch?v=VUV6bzml2SU
 - **Adaptive Merging**: Merge two LoRA models with adaptive merge strategies.
 - **Manual Weight Merging**: Support for traditional weighted merging, allowing users to force specific weights.
 - **NEW! Additive Merging**: Use 100% of one LoRA and add a specific percentage of another, perfect for enhancing similar concepts.
+- **Post-hoc EMA Merging**: Smooth multiple LoRAs trained at different stages using an exponential moving average.
 - **Mix or Weighted Options**: Choose from single weighted, or create mixed versions for 25%, 50%, and 75% weights automatically.
 - **User-Friendly Guidance**: Easy-to-follow prompts guide you through the setup.
 
