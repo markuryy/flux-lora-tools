@@ -28,17 +28,20 @@ def main_input():
         "\n[bold yellow]Would you like to merge:[/bold yellow]\n"
         "[1] Two LoRA models\n"
         "[2] A LoRA model into a main checkpoint\n"
-        "[3] God Mode"
+        "[3] God Mode\n"
+        "[4] EMA merge of multiple LoRAs"
     )
-    choice = Prompt.ask("[bold green]Choose an option (1-3)[/bold green]")
+    choice = Prompt.ask("[bold green]Choose an option (1-4)[/bold green]")
 
     # Call the respective merge function based on the user's choice
     if choice == "1":
         settings = option_5_merge_lora()  # For merging two LoRA models
     elif choice == "2":
         settings = option_6_merge_lora_checkpoint()  # For merging a LoRA model into a checkpoint
-    else:
+    elif choice == "3":
         settings = option_god_mode()  # For going mad shit crazy
+    else:
+        settings = option_ema_merge_loras()  # For EMA merging
 
     # Check if settings are valid before confirming
     if settings:
@@ -597,6 +600,73 @@ def option_6_merge_lora_checkpoint():
 
     settings["lora_model"] = lora_file
     settings["checkpoint_model"] = checkpoint_file
+
+    return settings
+
+def option_ema_merge_loras():
+    """Handle input for EMA merging of multiple LoRA models."""
+    console.print("----\n")  # Visual separator for entering the new section
+    console.print(
+        "[bold green]This utility applies an exponential moving average across multiple LoRA models to smooth training noise.[/bold green]\n"
+    )
+
+    settings = {"utility": "EMA Merge"}
+
+    lora_folder = "05a-lora_merging"
+    lora_files = [f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
+
+    if len(lora_files) < 2:
+        console.print("[bold red]At least two LoRA files are required for EMA merging.[/bold red]")
+        return None
+
+    lora_details = []
+    with tqdm(total=len(lora_files), desc="Loading LoRA models", unit="file", dynamic_ncols=True) as progress_bar:
+        for i, lora_file in enumerate(lora_files, 1):
+            lora_path = os.path.join(lora_folder, lora_file)
+            model = load_lora_model(lora_path)
+            num_layers = len(model.keys())
+            file_size = get_file_size(lora_path)
+            lora_filename = lora_file.replace('.safetensors', '').replace('.pt', '')
+            lora_details.append([i, lora_filename, num_layers, f"{file_size:.2f} MB"])
+            progress_bar.update(1)
+
+    while True:
+        formatted_table = tabulate(
+            lora_details,
+            headers=["Index", "LoRA Model", "Number of Layers", "File Size"],
+            tablefmt="pretty",
+            maxcolwidths=[None, 30, None, None]
+        )
+        console.print(f"\n{formatted_table}")
+
+        indices = Prompt.ask(
+            f"Enter the indices of LoRAs in order from least to most trained (e.g., 1,3,5)"
+        )
+        try:
+            idx_list = [int(i.strip()) - 1 for i in indices.split(',') if i.strip()]
+            if len(idx_list) < 2 or any(i < 0 or i >= len(lora_files) for i in idx_list):
+                raise ValueError
+        except ValueError:
+            console.print("[bold red]Invalid selection. Please enter at least two valid indices separated by commas.[/bold red]")
+            continue
+
+        selected_files = [lora_files[i] for i in idx_list]
+
+        decay_input = Prompt.ask("[bold green]Enter EMA decay (0-1, e.g., 0.9)[/bold green]", default="0.9")
+        try:
+            ema_decay = float(decay_input)
+            if not 0 < ema_decay < 1:
+                raise ValueError
+        except ValueError:
+            console.print("[bold red]Please enter a valid decay between 0 and 1.[/bold red]")
+            continue
+
+        settings["lora_files"] = selected_files
+        settings["ema_decay"] = ema_decay
+
+        confirm = Prompt.ask("[bold yellow]Is this satisfactory?[/bold yellow] (no to adjust, yes to continue)")
+        if confirm.lower() in ["yes", "y", ""]:
+            break
 
     return settings
 
