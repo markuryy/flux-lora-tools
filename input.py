@@ -317,21 +317,21 @@ def option_5_merge_lora():
     settings = {"utility": "Merge LoRA"}
 
     # Step 1: Scan the folder and make an inventory of all LoRA (.safetensor) files
-    lora_folder = "05a-lora_merging"
+    lora_folder = "lora"
     lora_files = [
         f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')
     ]
 
     if not lora_files:
         console.print(
-            "[bold red]Error: No LoRA files found in 05a-lora_merging.[/bold red]\n"
+            "[bold red]Error: No LoRA files found in lora.[/bold red]\n"
             "Please ensure that .safetensors files are present before proceeding."
         )
         return None
 
     if len(lora_files) == 1:
         console.print(
-            "[bold red]Error: Only one LoRA file found in 05a-lora_merging.[/bold red]\n"
+            "[bold red]Error: Only one LoRA file found in lora.[/bold red]\n"
             "A minimum of two LoRA files is required to perform a merge. Please add more files to proceed."
         )
         return None
@@ -485,7 +485,7 @@ def option_6_merge_lora_checkpoint():
     settings = {"utility": "Merge LoRA Checkpoint"}
 
     # Step 1: Scan the folder for LoRA models
-    lora_folder = "05a-lora_merging"
+    lora_folder = "lora"
     checkpoint_folder = "05b-checkpoint/input"  # Updated folder for input checkpoints
     lora_files = [
         f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')
@@ -495,7 +495,7 @@ def option_6_merge_lora_checkpoint():
     if not lora_files or not checkpoint_files:
         console.print(
             "[bold red]Error: No LoRA or checkpoint files found in the specified folders.[/bold red]\n"
-            "Please ensure that .safetensors files are present in both 05a-lora_merging and 05b-checkpoint/input before proceeding."
+            "Please ensure that .safetensors files are present in both lora and 05b-checkpoint/input before proceeding."
         )
         return None
 
@@ -617,7 +617,7 @@ def option_ema_merge_loras():
 
     settings = {"utility": "EMA Merge"}
 
-    lora_folder = "05a-lora_merging"
+    lora_folder = "lora"
     lora_files = sorted(
         [f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
     )
@@ -686,10 +686,10 @@ def option_god_mode():
     )
 
     # Get the folder containing LoRA models
-    lora_folder = "05a-lora_merging"
+    lora_folder = "lora"
     if not os.path.exists(lora_folder):
         console.print(
-            "[bold red]Error: No LoRA folder found at 05a-lora_merging.[/bold red]\n"
+            "[bold red]Error: No LoRA folder found at lora.[/bold red]\n"
             "Please ensure that the folder contains LoRA models before proceeding."
         )
         return None

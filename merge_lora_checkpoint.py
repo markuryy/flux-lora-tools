@@ -10,7 +10,7 @@ def start(settings):
     print(f"\n###################################\nMerging LoRA into Checkpoint with settings: {settings}")
 
     # Load the LoRA and checkpoint models
-    lora_folder = "05a-lora_merging"  # Folder for LoRA models
+    lora_folder = "lora"  # Folder for LoRA models
     checkpoint_folder = "05b-checkpoint/input"  # Updated folder for checkpoints
     output_folder = "05b-checkpoint/output"  # Updated folder for saving merged checkpoints
 

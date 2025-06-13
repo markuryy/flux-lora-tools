@@ -22,8 +22,8 @@ __pycache__/
 04-ai_caption/output/*
 !04-ai_caption/output/.gitkeep
 
-05a-lora_merging/*
-!05a-lora_merging/.gitkeep
+lora/*
+!lora/.gitkeep
 
 05b-lora_checkpoint/output/*
 !05b-lora_checkpoint/output/.gitkeep

@@ -12,7 +12,7 @@ def start(settings):
     print(f"\n###################################\nMerging LoRA with settings: {settings}")
 
     # Load the LoRA models
-    lora_folder = "05a-lora_merging"
+    lora_folder = "lora"
     main_lora_path = os.path.join(lora_folder, settings['main_lora'])
     merge_lora_path = os.path.join(lora_folder, settings['merge_lora'])
 
@@ -350,7 +350,7 @@ def start_ema(settings):
     """Run EMA merging on a list of LoRA models."""
     print(f"\n###################################\nEMA merging with settings: {settings}")
 
-    lora_folder = "05a-lora_merging"
+    lora_folder = "lora"
     paths = [os.path.join(lora_folder, f) for f in settings['lora_files']]
     models = [load_file(p) for p in paths]
     ema_model = ema_merge_series(models, settings['ema_decay'])
