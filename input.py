@@ -8,6 +8,7 @@ from rich.prompt import Prompt
 from rich.panel import Panel
 from tqdm import tqdm
 from safetensors.torch import load_file as safe_load
+import torch
 from tabulate import tabulate
 
 # Initialize the Rich console
@@ -317,7 +318,9 @@ def option_5_merge_lora():
 
     # Step 1: Scan the folder and make an inventory of all LoRA (.safetensor) files
     lora_folder = "05a-lora_merging"
-    lora_files = [f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
+    lora_files = [
+        f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')
+    ]
 
     if not lora_files:
         console.print(
@@ -484,7 +487,9 @@ def option_6_merge_lora_checkpoint():
     # Step 1: Scan the folder for LoRA models
     lora_folder = "05a-lora_merging"
     checkpoint_folder = "05b-checkpoint/input"  # Updated folder for input checkpoints
-    lora_files = [f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
+    lora_files = [
+        f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')
+    ]
     checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
 
     if not lora_files or not checkpoint_files:
@@ -613,7 +618,9 @@ def option_ema_merge_loras():
     settings = {"utility": "EMA Merge"}
 
     lora_folder = "05a-lora_merging"
-    lora_files = [f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
+    lora_files = sorted(
+        [f for f in os.listdir(lora_folder) if f.endswith('.safetensors') or f.endswith('.pt')]
+    )
 
     if len(lora_files) < 2:
         console.print("[bold red]At least two LoRA files are required for EMA merging.[/bold red]")
@@ -640,14 +647,14 @@ def option_ema_merge_loras():
         console.print(f"\n{formatted_table}")
 
         indices = Prompt.ask(
-            f"Enter the indices of LoRAs in order from least to most trained (e.g., 1,3,5)"
+            f"Enter the indices of LoRAs in order from least to most trained (e.g., 1..4,6)"
         )
         try:
-            idx_list = [int(i.strip()) - 1 for i in indices.split(',') if i.strip()]
-            if len(idx_list) < 2 or any(i < 0 or i >= len(lora_files) for i in idx_list):
-                raise ValueError
+            idx_list = parse_indices(indices, len(lora_files))
         except ValueError:
-            console.print("[bold red]Invalid selection. Please enter at least two valid indices separated by commas.[/bold red]")
+            console.print(
+                "[bold red]Invalid selection. Use numbers or ranges like 1..4 separated by commas.[/bold red]"
+            )
             continue
 
         selected_files = [lora_files[i] for i in idx_list]
@@ -725,6 +732,33 @@ def load_lora_model(file_path):
     else:
         lora_model = torch.load(file_path)
     return lora_model
+
+def parse_indices(indices_str, max_index):
+    """Parse comma-separated indices or ranges like '1..4'."""
+    result = []
+    for part in indices_str.split(','):
+        part = part.strip()
+        if not part:
+            continue
+        if '..' in part:
+            try:
+                start, end = map(int, part.split('..'))
+            except ValueError:
+                raise ValueError
+            step = 1 if end >= start else -1
+            for val in range(start, end + step, step):
+                idx = val - 1
+                if idx < 0 or idx >= max_index:
+                    raise ValueError
+                result.append(idx)
+        else:
+            idx = int(part) - 1
+            if idx < 0 or idx >= max_index:
+                raise ValueError
+            result.append(idx)
+    if len(result) < 2:
+        raise ValueError
+    return result
 
 def confirm_settings(settings):
     """Automatically confirm the settings without user input."""
